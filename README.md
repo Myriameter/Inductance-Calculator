@@ -14,7 +14,7 @@ Tkinter (included in standard Python installation)
 
 Installation
 bashCopy# Clone the repository
-git clone https://github.com/yourusername/myriameter-inductor-calculator.git
+git clone https://github.com/Myriameter/myriameter-inductor-calculator.git
 
 # Navigate to the directory
 cd myriameter-inductor-calculator
@@ -23,8 +23,8 @@ cd myriameter-inductor-calculator
 python inductor_calculator.py
 Usage
 
-Enter your known capacitor value and select appropriate units
+Enter your known capacitor value and select the appropriate units
 Input any known parasitic inductance of your measurement setup (or leave as zero)
 Enter the number of cycles measured on your oscilloscope
-Enter the total time of these cycles and select appropriate time units
+Enter the total time of these cycles and select the appropriate time units
 Click "Calculate Inductance" to get your result
