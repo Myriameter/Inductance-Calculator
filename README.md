@@ -20,7 +20,9 @@ git clone https://github.com/Myriameter/myriameter-inductor-calculator.git
 cd myriameter-inductor-calculator
 
 # Run the calculator
-python inductor_calculator.py
+python inductor_calc.py
+Or use inductor_calc.exe 
+
 Usage
 
 Enter your known capacitor value and select the appropriate units
