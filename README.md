@@ -12,13 +12,6 @@ Requirements
 Python 3.x
 Tkinter (included in standard Python installation)
 
-Installation
-bashCopy# Clone the repository
-git clone https://github.com/Myriameter/myriameter-inductor-calculator.git
-
-# Navigate to the directory
-cd myriameter-inductor-calculator
-
 # Run the calculator
 python inductor_calc.py
 Or use inductor_calc.exe 
