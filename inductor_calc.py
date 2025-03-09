@@ -20,11 +20,10 @@ class InductorCalculator:
         
         # Define conversion factors
         self.cap_factors = {"pF": 1e-12, "nF": 1e-9, "µF": 1e-6}
-        self.ind_factors = {"pH": 1e-12, "nH": 1e-9, "µH": 1e-6, "mH": 1e-3, "H": 1}
         self.time_factors = {"nS": 1e-9, "µS": 1e-6, "mS": 1e-3}
         
-        # Result storage
-        self.calculated_inductance_henries = 0
+        # Result storage (now in picohenries)
+        self.calculated_inductance_picohenries = 0
         
         # Create the UI
         self.create_widgets()
@@ -198,22 +197,38 @@ class InductorCalculator:
         time_value = float(self.time_entry.get())
         parasitic = float(self.parasitic_entry.get())
         
-        # Apply conversions
+        # Apply conversions for capacitor and time
         capacitor_in_farads = capacitor_value * self.cap_factors[self.capacitor_unit.get()]
         time_in_seconds = time_value * self.time_factors[self.time_unit.get()]
         
         # Calculate frequency (Hz)
         frequency = (cycles / time_in_seconds)
         
-        # Calculate inductance
-        L = 1 / (4 * pow(3.14159, 2) * pow(frequency, 2) * capacitor_in_farads)
+        # Calculate inductance using the resonant frequency formula
+        # L = 1/(4π²f²C)
+        pi = 3.14159265359
         
-        # Subtract parasitic inductance
-        parasitic_in_henries = parasitic * self.ind_factors[self.parasitic_unit.get()]
-        L -= parasitic_in_henries
+        # The standard formula gives result in henries when using SI units
+        L_henries = 1 / (4 * pow(pi, 2) * pow(frequency, 2) * capacitor_in_farads)
         
-        # Store result
-        self.calculated_inductance_henries = L
+        # Convert from henries to picohenries for easier handling of small values
+        L_picohenries = L_henries * 1e12
+        
+        # Convert parasitic inductance to picohenries and subtract
+        parasitic_unit = self.parasitic_unit.get()
+        parasitic_in_picohenries = 0
+        
+        if parasitic_unit == "pH":
+            parasitic_in_picohenries = parasitic
+        elif parasitic_unit == "nH":
+            parasitic_in_picohenries = parasitic * 1000  # 1 nH = 1000 pH
+        elif parasitic_unit == "µH":
+            parasitic_in_picohenries = parasitic * 1000000  # 1 µH = 1,000,000 pH
+        
+        L_picohenries -= parasitic_in_picohenries
+        
+        # Store result in picohenries
+        self.calculated_inductance_picohenries = L_picohenries
         
         # Update radio button states
         self.update_radio_button_states()
@@ -228,25 +243,39 @@ class InductorCalculator:
         self.capacitor_entry.select_range(0, tk.END)
     
     def update_radio_button_states(self):
-        # Units in order
+        # Units in order from smallest to largest
         units = ["pH", "nH", "µH", "mH", "H"]
         
-        # Find suitable units for display (where rounded value would be non-zero)
+        # Convert picohenries to each unit to find suitable display units
         suitable_units = []
-        for unit in units:
-            value = self.calculated_inductance_henries / self.ind_factors[unit]
-            # For pH/nH, check if rounded integer value is non-zero
-            if unit in ["pH", "nH"]:
-                if abs(round(value)) >= 1:  # Must round to at least 1
-                    suitable_units.append((unit, value))
-            # For other units, check if rounded to 2 decimal places is non-zero
-            else:
-                if abs(round(value, 2)) >= 0.01:  # Would display as at least 0.01
-                    suitable_units.append((unit, value))
         
-        # If no suitable units found, enable only the smallest unit (pH)
+        # pH is the base unit - no conversion needed
+        ph_value = self.calculated_inductance_picohenries
+        if abs(round(ph_value)) >= 1:  # Would display as at least 1
+            suitable_units.append(("pH", ph_value))
+        
+        # nH = pH / 1000
+        nh_value = ph_value / 1000
+        if abs(round(nh_value)) >= 1:  # Would display as at least 1
+            suitable_units.append(("nH", nh_value))
+        
+        # µH = nH / 1000 = pH / 1000000
+        uh_value = ph_value / 1000000
+        if abs(round(uh_value, 2)) >= 0.01:  # Would display as at least 0.01
+            suitable_units.append(("µH", uh_value))
+        
+        # mH = µH / 1000 = pH / 1000000000
+        mh_value = ph_value / 1000000000
+        if abs(round(mh_value, 2)) >= 0.01:  # Would display as at least 0.01
+            suitable_units.append(("mH", mh_value))
+        
+        # H = mH / 1000 = pH / 1000000000000
+        h_value = ph_value / 1000000000000
+        if abs(round(h_value, 2)) >= 0.01:  # Would display as at least 0.01
+            suitable_units.append(("H", h_value))
+        
+        # If no suitable units found, enable only pH as fallback
         if not suitable_units:
-            # Enable only pH as fallback
             for unit, rb in self.result_radio_buttons:
                 if unit == "pH":
                     rb.configure(state="normal")
@@ -262,9 +291,15 @@ class InductorCalculator:
                 best_unit = unit
                 break
         
-        # If no best unit found, use the smallest suitable unit
+        # If no best unit found, find the most appropriate unit for extreme values
         if not best_unit:
-            best_unit = suitable_units[0][0]
+            # For extremely large values (>1000 in the largest unit)
+            if len(suitable_units) > 0 and abs(suitable_units[-1][1]) >= 1000:
+                # Use the largest suitable unit (which will be at the end of the list)
+                best_unit = suitable_units[-1][0]
+            # For normal values just outside range, use the smallest suitable unit
+            else:
+                best_unit = suitable_units[0][0]
         
         # Enable only suitable units and set the best unit
         enabled_units = [unit for unit, _ in suitable_units]
@@ -281,8 +316,19 @@ class InductorCalculator:
     
     def update_result_display(self):
         selected_unit = self.result_unit.get()
-        converted_value = self.calculated_inductance_henries / self.ind_factors[selected_unit]
         
+        # Convert from picohenries (pH) to the selected unit
+        if selected_unit == "pH":
+            converted_value = self.calculated_inductance_picohenries
+        elif selected_unit == "nH":
+            converted_value = self.calculated_inductance_picohenries / 1000
+        elif selected_unit == "µH":
+            converted_value = self.calculated_inductance_picohenries / 1000000
+        elif selected_unit == "mH":
+            converted_value = self.calculated_inductance_picohenries / 1000000000
+        elif selected_unit == "H":
+            converted_value = self.calculated_inductance_picohenries / 1000000000000
+            
         # Format display based on unit type
         if selected_unit in ["pH", "nH"]:
             # Display as integer (0 decimal places)
