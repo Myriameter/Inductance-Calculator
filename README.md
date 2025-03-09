@@ -11,6 +11,7 @@ Requirements:
 
 Python 3.x
 Tkinter (included in standard Python installation)
+https://www.python.org/downloads/
 
 # Run the calculator
 python inductor_calc.py
