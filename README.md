@@ -6,6 +6,7 @@ Apply a square wave to excite the LC circuit.
 Measure the resonant frequency oscillations on your oscilloscope.
 Enter the capacitor value, number of cycles, and total time of measurement.
 The calculator computes the inductance based on the formula: L = 1/(4π²f²C).
+You can also calculate Q by giving initial and final voltage measurements for the waveform over the total time.
 
 Requirements:
 
