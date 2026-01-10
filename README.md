@@ -15,8 +15,7 @@ Tkinter (included in standard Python installation)
 https://www.python.org/downloads/
 
 # Run the calculator
-python inductor_calc.py
-Or use inductor_calc.exe 
+inductor_q_calculator 1.31.pyw
 
 Usage
 
